@@ -1,9 +1,12 @@
+using EventBus.Messages.Common;
+using MassTransit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using Ordering.Api.EventBusConsumer;
 using Ordering.Application;
 using Ordering.Infrastructure;
 
@@ -22,6 +25,21 @@ namespace Ordering.Api
         {
             services.AddApplicationServices();
             services.AddInfrastructureServices(Configuration);
+            services.AddMassTransit(config =>
+            {
+                config.AddConsumer<BasketCheckoutConsumer>();
+                config.UsingRabbitMq((context, configurator) =>
+                {
+                    configurator.Host(Configuration["EventBusSettings:HostAddress"]);
+                    configurator.ReceiveEndpoint(EventBusConstants.BasketCheckoutQueue, c =>
+                    {
+                        c.ConfigureConsumer<BasketCheckoutConsumer>(context);
+                    });
+                });
+            });
+            services.AddMassTransitHostedService();
+            services.AddAutoMapper(typeof(Startup));
+            services.AddScoped<BasketCheckoutConsumer>();
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {

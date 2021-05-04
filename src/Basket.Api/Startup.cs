@@ -1,6 +1,8 @@
+using Basket.Api.GrpcServices;
 using Basket.Api.Repositories;
 using Basket.Api.Repositories.Interfaces;
 using Discount.Grpc.Protos;
+using MassTransit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -8,7 +10,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using System;
-using Basket.Api.GrpcServices;
 
 namespace Basket.Api
 {
@@ -21,7 +22,6 @@ namespace Basket.Api
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddStackExchangeRedisCache(options =>
@@ -29,9 +29,18 @@ namespace Basket.Api
                 options.Configuration = Configuration.GetValue<string>("CacheSettings:ConnectionString");
             });
             services.AddScoped<IBasketRepository, BasketRepository>();
+            services.AddAutoMapper(typeof(Startup));
             services.AddGrpcClient<DiscountProtoService.DiscountProtoServiceClient>(options =>
                 options.Address = new Uri(Configuration["GrpcSettings:DiscountUrl"]));
             services.AddScoped<DiscountGrpcService>();
+            services.AddMassTransit(config =>
+            {
+                config.UsingRabbitMq((context, configurator) =>
+                {
+                    configurator.Host(Configuration["EventBusSettings:HostAddress"]);
+                });
+            });
+            services.AddMassTransitHostedService();
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
@@ -39,7 +48,6 @@ namespace Basket.Api
             });
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
