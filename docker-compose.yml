@@ -49,10 +49,17 @@ services:
             context: .
             dockerfile: src/Ordering/Ordering.Api/Dockerfile
 
+    ocelotapigateway:
+        image: ${DOCKER_REGISTRY-}ocelotapigateway
+        build:
+            context: .
+            dockerfile: src/OcelotApiGateway/Dockerfile
+
 volumes:
     mongo_data:
     postgres_data:
     pgadmin_data:
     
+
 
 
