@@ -61,11 +61,18 @@ services:
             context: .
             dockerfile: src/Shopping.Aggregator/Dockerfile
 
+    aspnetrunbasics:
+        image: ${DOCKER_REGISTRY-}aspnetrunbasics
+        build:
+            context: .
+            dockerfile: src/AspnetRunBasics/Dockerfile
+
 volumes:
     mongo_data:
     postgres_data:
     pgadmin_data:
     
+
 
 
 
